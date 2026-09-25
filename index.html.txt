@@ -1,0 +1,1366 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>VapeHab - Mini App</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+:root{--bg-color:#121212;--card-bg:#1e1e1e;--modal-bg:#1e1e1e;--block-bg:#141414;--text-color:#fff;--text-secondary:#aaa;--accent-red:#e63946;--accent-green:#2ecc71;--accent-orange:#f4a261;--accent-blue:#5dade2;--header-h:56px;--nav-h:70px}
+*{box-sizing:border-box;margin:0;padding:0;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+html,body{height:100vh;overflow:hidden;background-color:var(--bg-color);color:var(--text-color);width:100%}
+.header{position:fixed;top:0;left:0;right:0;height:var(--header-h);display:flex;align-items:center;justify-content:space-between;padding:10px 15px;background-color:var(--bg-color);z-index:100}
+.header-left{display:flex;align-items:center;gap:12px;flex:1;min-width:0}
+.header-avatar{width:36px;height:36px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#333}
+.header-avatar img{width:100%;height:100%;object-fit:cover}
+.header-titles{display:flex;flex-direction:column;min-width:0}
+.header-title-main{font-size:16px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-subtitle{font-size:12px;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-actions{display:flex;gap:6px;flex-shrink:0}
+.header-btn{background:none;border:1px solid #333;color:var(--text-secondary);padding:5px 10px;border-radius:8px;font-size:11px;display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.header-btn svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none}
+.screen{position:fixed;top:var(--header-h);bottom:var(--nav-h);left:0;right:0;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;display:none;padding-bottom:20px}
+.screen.active{display:block}
+.screen::-webkit-scrollbar{width:4px}
+.screen::-webkit-scrollbar-thumb{background:#333;border-radius:2px}
+.promo-banner{margin:0;border-radius:0 0 15px 15px;overflow:hidden;position:relative;background-color:#2a2a2a;width:100%}
+.promo-banner img{width:100%;height:auto;display:block;object-fit:cover}
+.promo-button{position:absolute;bottom:15px;right:15px;background-color:rgba(0,0,0,.7);color:#fff;padding:10px 20px;border-radius:25px;font-size:14px;font-weight:500;border:none;cursor:pointer;display:flex;align-items:center;gap:6px;backdrop-filter:blur(4px)}
+.promo-dots{position:absolute;bottom:15px;left:50%;transform:translateX(-50%);display:flex;gap:5px}
+.promo-dot{width:6px;height:6px;border-radius:50%;background-color:rgba(255,255,255,.4)}
+.promo-dot.active{background-color:#fff;width:18px;border-radius:3px}
+.search-container{margin:10px 15px;position:relative}
+.search-container input{width:100%;background-color:var(--card-bg);border:none;border-radius:12px;padding:12px 15px 12px 40px;color:var(--text-color);font-size:14px;outline:none}
+.search-container input::placeholder{color:var(--text-secondary)}
+.search-icon{position:absolute;left:15px;top:50%;transform:translateY(-50%);color:var(--text-secondary);width:18px;height:18px}
+.categories-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;padding:10px 15px;margin-top:10px}
+.category-item{display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer}
+.category-icon{width:55px;height:55px;border-radius:16px;display:flex;align-items:center;justify-content:center;position:relative;transition:transform .2s;color:#fff}
+.category-icon:active{transform:scale(.95)}
+.category-icon svg{width:28px;height:28px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.icon-flip-y{transform:scaleY(-1)}
+.category-label{font-size:11px;color:var(--text-color);text-align:center;line-height:1.2}
+.cat-all{background:linear-gradient(135deg,#e63946,#c1121f)}
+.cat-pods{background:linear-gradient(135deg,#457b9d,#1d3557)}
+.cat-liquids{background:linear-gradient(135deg,#9d4edd,#5a189a)}
+.cat-disposables{background:linear-gradient(135deg,#f4a261,#e76f51)}
+.cat-accessories{background:linear-gradient(135deg,#2a9d8f,#1b4332)}
+.badge{position:absolute;top:-5px;right:-5px;font-size:9px;padding:2px 6px;border-radius:10px;font-weight:bold;color:#fff;text-transform:uppercase}
+.badge-red{background-color:#e63946}
+.badge-orange{background-color:#f4a261}
+.products-section{padding:5px 15px 20px}
+.products-title{font-size:16px;font-weight:700;margin:15px 0 12px;display:flex;align-items:center;justify-content:space-between}
+.products-count{font-size:12px;color:var(--text-secondary);font-weight:400}
+.products-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.product-card{background:var(--card-bg);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}
+.product-wrap{position:relative}
+.product-image{width:100%;aspect-ratio:1/1;object-fit:cover;background:#2a2a2a;display:block}
+.product-badge{position:absolute;top:8px;left:8px;background:var(--accent-red);color:#fff;font-size:9px;padding:3px 8px;border-radius:8px;font-weight:700;text-transform:uppercase}
+.product-badge.hit{background:var(--accent-orange)}
+.product-badge.new{background:var(--accent-green)}
+.product-info{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1}
+.product-name{font-size:13px;font-weight:700;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:34px}
+.product-category{font-size:10px;color:var(--text-secondary);text-transform:uppercase;font-weight:600}
+.product-flavors{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.flavor-tag{font-size:10px;padding:3px 7px;border-radius:6px;background:#2a2a2a;color:#ccc;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.flavor-more{font-size:10px;color:#e63946;font-weight:700;padding:3px 0}
+.product-specs{font-size:10px;color:#aaa;padding:3px 7px;background:#141414;border-radius:6px;display:inline-block;margin-top:4px;width:fit-content}
+.product-price-row{display:flex;align-items:center;gap:6px;margin-top:6px}
+.product-price{font-size:15px;font-weight:700;color:#fff}
+.product-old-price{font-size:12px;color:#777;text-decoration:line-through}
+.product-stock{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--accent-green);margin-top:2px}
+.product-stock .dot{width:6px;height:6px;border-radius:50%;background:var(--accent-green)}
+.product-stock.out{color:#e63946}
+.product-stock.out .dot{background:#e63946}
+.btn-flavor{width:100%;padding:9px;border-radius:10px;background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;border:none;font-size:12px;font-weight:700;cursor:pointer;margin-top:8px;display:flex;align-items:center;justify-content:center;gap:5px;position:relative;z-index:5}
+.btn-flavor:active{transform:scale(.95);background:#a8121c}
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-secondary);font-size:14px}
+.loading-state{text-align:center;padding:40px 20px;color:var(--text-secondary);font-size:14px;display:flex;flex-direction:column;align-items:center;gap:12px}
+.spinner{width:30px;height:30px;border:3px solid #333;border-top-color:#e63946;border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.profile-header{display:flex;align-items:center;gap:15px;margin:15px;background-color:var(--card-bg);padding:20px;border-radius:20px}
+.avatar{width:70px;height:70px;border-radius:50%;background:linear-gradient(135deg,#e63946,#c1121f);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:#fff;border:2px solid #333;overflow:hidden;flex-shrink:0}
+.avatar img{width:100%;height:100%;object-fit:cover}
+.user-info h2{font-size:20px;margin-bottom:5px;word-break:break-word}
+.user-info p{font-size:14px;color:var(--text-secondary);word-break:break-word}
+.user-id{font-size:12px;color:#666;margin-top:4px}
+.profile-menu{display:flex;flex-direction:column;gap:10px;padding:0 15px}
+.menu-item{background-color:var(--card-bg);padding:16px;border-radius:14px;display:flex;align-items:center;gap:12px;font-size:15px;cursor:pointer;position:relative}
+.menu-item:active{background:#2a2a2a}
+.menu-icon{font-size:20px;width:24px;text-align:center}
+.admin-item{background:linear-gradient(135deg,rgba(230,57,70,.15),rgba(230,57,70,.05));border:1px solid rgba(230,57,70,.4);color:#ff6b6b}
+.menu-badge{background:var(--accent-red);color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:10px;margin-left:auto}
+.cart-container{padding:15px}
+.cart-title{font-size:22px;font-weight:700;margin-bottom:18px}
+.cart-item{background:var(--card-bg);border-radius:14px;padding:12px;display:flex;gap:12px;margin-bottom:10px}
+.cart-item-img{width:70px;height:70px;border-radius:10px;object-fit:cover;background:#2a2a2a;flex-shrink:0}
+.cart-item-info{flex:1;min-width:0;display:flex;flex-direction:column;justify-content:space-between}
+.cart-item-name{font-size:13px;font-weight:700;line-height:1.3}
+.cart-item-flavor{font-size:11px;color:#e63946;margin-top:2px}
+.cart-item-bottom{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+.cart-item-price{font-size:14px;font-weight:700;color:#fff}
+.qty-controls{display:flex;align-items:center;gap:6px;background:#0a0a0a;border-radius:8px;padding:2px}
+.qty-btn{width:26px;height:26px;border-radius:6px;background:#2a2a2a;border:none;color:#fff;font-size:16px;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.qty-btn:active{background:#444}
+.qty-value{font-size:13px;font-weight:700;min-width:22px;text-align:center}
+.cart-item-remove{position:absolute;top:8px;right:8px;background:none;border:none;color:#666;cursor:pointer;padding:4px}
+.cart-item-remove svg{width:14px;height:14px;stroke:currentColor;stroke-width:2;fill:none}
+.cart-item-wrap{position:relative}
+.cart-summary{background:var(--card-bg);border-radius:16px;padding:16px;margin-top:20px}
+.cart-summary-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:14px}
+.cart-summary-row.total{font-size:18px;font-weight:700;margin-top:10px;padding-top:10px;border-top:1px solid #2a2a2a}
+.cart-summary-row.total .val{color:#e63946}
+.cart-checkout-btn{width:100%;padding:16px;border-radius:14px;background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;border:none;font-size:15px;font-weight:700;cursor:pointer;margin-top:14px;box-shadow:0 4px 15px rgba(230,57,70,.35)}
+.cart-checkout-btn:active{transform:scale(.98)}
+.cart-empty{text-align:center;padding:60px 20px;color:var(--text-secondary)}
+.cart-empty-icon{font-size:60px;margin-bottom:16px;opacity:.5}
+.cart-empty-text{font-size:15px}
+.user-order-card{background:var(--card-bg);border-radius:14px;padding:14px;margin-bottom:12px;border-left:3px solid #e63946}
+.user-order-card.status-new{border-left-color:#e63946}
+.user-order-card.status-processing{border-left-color:#f4a261}
+.user-order-card.status-delivered{border-left-color:#2ecc71}
+.user-order-card.status-cancelled{border-left-color:#666;opacity:.65}
+.user-order-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.user-order-id{font-size:11px;color:var(--text-secondary);font-family:monospace}
+.user-order-date{font-size:11px;color:var(--text-secondary)}
+.user-order-items{background:#0a0a0a;border-radius:10px;padding:10px;margin:8px 0}
+.user-order-item{display:flex;justify-content:space-between;font-size:12px;padding:4px 0}
+.user-order-item-flavor{font-size:10px;color:#e63946}
+.user-order-total{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-top:8px;padding-top:8px;border-top:1px solid #2a2a2a}
+.user-order-total .val{color:#e63946}
+.user-order-address{font-size:12px;color:#aaa;margin:6px 0}
+.user-order-status-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;text-transform:uppercase;white-space:nowrap}
+.user-order-status-badge.new{background:rgba(230,57,70,.2);color:#e63946}
+.user-order-status-badge.processing{background:rgba(244,162,97,.2);color:#f4a261}
+.user-order-status-badge.delivered{background:rgba(46,204,113,.2);color:#2ecc71}
+.user-order-status-badge.cancelled{background:rgba(102,102,102,.3);color:#999}
+.bottom-nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background-color:var(--card-bg);display:flex;justify-content:space-around;align-items:flex-start;padding:10px 0 15px 0;border-top:1px solid #333;z-index:100}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--text-secondary);cursor:pointer;flex:1;position:relative}
+.nav-item.active{color:var(--accent-red)}
+.nav-label{font-size:10px}
+.icon-svg{width:24px;height:24px;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.nav-badge{position:absolute;top:-4px;right:50%;transform:translateX(18px);background:#e63946;color:#fff;font-size:9px;font-weight:700;padding:1px 5px;border-radius:8px;min-width:16px;text-align:center}
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;z-index:200;padding:15px;backdrop-filter:blur(3px)}
+.modal-overlay.active{display:flex}
+.modal{background:var(--modal-bg);border-radius:22px;width:100%;max-width:420px;max-height:92vh;overflow-y:auto;padding:22px 18px;position:relative;animation:modalIn .25s ease}
+@keyframes modalIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.modal-close{position:absolute;top:15px;right:15px;width:32px;height:32px;border-radius:50%;background:#2a2a2a;border:none;color:#aaa;font-size:16px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:5}
+.modal-avatar{width:100px;height:100px;border-radius:50%;overflow:hidden;margin:10px auto 18px;border:3px solid #2a2a2a;box-shadow:0 0 35px rgba(230,57,70,.45)}
+.modal-avatar img{width:100%;height:100%;object-fit:cover}
+.modal-title{text-align:center;font-size:24px;font-weight:800;letter-spacing:1px;text-transform:uppercase;margin-bottom:6px}
+.modal-subtitle{text-align:center;font-size:13px;color:var(--text-secondary);margin-bottom:16px}
+.modal-badges{display:flex;justify-content:center;gap:8px;margin-bottom:18px;flex-wrap:wrap}
+.modal-badge{padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:5px;border:1px solid}
+.modal-badge.red{color:#ff6b6b;border-color:rgba(230,57,70,.5);background:rgba(230,57,70,.1)}
+.modal-badge.green{color:#2ecc71;border-color:rgba(46,204,113,.5);background:rgba(46,204,113,.1)}
+.modal-info,.modal-block{background:var(--block-bg);border-radius:14px;padding:14px;display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.modal-info-icon{width:32px;height:32px;border-radius:50%;background:rgba(230,57,70,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.modal-info-icon svg{width:16px;height:16px;stroke:var(--accent-red);stroke-width:2;fill:none}
+.modal-info-text{font-size:13px;line-height:1.5;color:#ccc}
+.block-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.block-icon.red{background:rgba(230,57,70,.15)}
+.block-icon.red svg{stroke:var(--accent-red)}
+.block-icon.orange{background:rgba(244,162,97,.15)}
+.block-icon.orange svg{stroke:var(--accent-orange)}
+.block-icon svg{width:16px;height:16px;stroke-width:2;fill:none}
+.block-content{flex:1;min-width:0}
+.block-header{display:flex;justify-content:space-between;align-items:center;gap:8px;margin-bottom:4px}
+.block-title{font-size:13px;color:var(--text-secondary);font-weight:500}
+.block-status{font-size:11px;color:var(--accent-green);font-weight:600;white-space:nowrap}
+.block-value{font-size:14px;color:var(--text-color);font-weight:600;line-height:1.4}
+.block-value.small{font-size:13px;font-weight:400;color:#ddd;line-height:1.5}
+.modal-btn{width:100%;padding:15px 18px;border-radius:14px;border:none;font-size:14px;font-weight:600;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;margin-bottom:10px}
+.modal-btn.primary{background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;box-shadow:0 4px 15px rgba(230,57,70,.35)}
+.modal-btn.dark{background:#141414;color:#fff;border:1px solid #2a2a2a}
+.modal-btn-content{display:flex;align-items:center;gap:10px;flex:1;text-align:left}
+.modal-btn-icon{width:20px;height:20px;flex-shrink:0}
+.modal-btn-icon svg{width:100%;height:100%;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;fill:none}
+.modal-btn-arrow{width:22px;height:22px;border-radius:50%;border:1.5px solid currentColor;display:flex;align-items:center;justify-content:center;font-size:12px;opacity:.7;flex-shrink:0}
+.modal-close-btn{width:100%;padding:14px;border-radius:14px;background:#141414;border:1px solid #2a2a2a;color:var(--text-secondary);font-size:14px;font-weight:600;cursor:pointer;margin-top:6px}
+.admin-title{font-size:20px;font-weight:700;margin-bottom:18px;display:flex;align-items:center;gap:8px}
+.admin-title svg{width:22px;height:22px;stroke:var(--accent-red);stroke-width:2;fill:none}
+.admin-tabs{display:flex;gap:6px;margin-bottom:16px;background:#141414;padding:4px;border-radius:12px;overflow-x:auto}
+.admin-tab{flex:1;padding:10px 6px;text-align:center;border-radius:9px;font-size:12px;font-weight:600;cursor:pointer;color:var(--text-secondary);background:none;border:none;white-space:nowrap}
+.admin-tab.active{background:var(--accent-red);color:#fff}
+.admin-panel{display:none}
+.admin-panel.active{display:block}
+.admin-form-group{margin-bottom:14px}
+.admin-form-label{font-size:12px;color:var(--text-secondary);margin-bottom:6px;display:block;font-weight:500}
+.admin-form-input,.admin-form-textarea,.admin-form-select{width:100%;padding:12px 14px;border-radius:10px;background:#141414;border:1px solid #2a2a2a;color:#fff;font-size:14px;outline:none;font-family:inherit}
+.admin-form-input:focus,.admin-form-textarea:focus,.admin-form-select:focus{border-color:var(--accent-red)}
+.admin-form-textarea{resize:vertical;min-height:70px}
+.admin-form-row{display:flex;gap:10px}
+.admin-form-row>*{flex:1}
+.admin-submit{width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;border:none;font-size:14px;font-weight:700;cursor:pointer;margin-top:6px;box-shadow:0 4px 15px rgba(230,57,70,.35)}
+.admin-submit:disabled{opacity:.5;cursor:not-allowed}
+.admin-product-row{display:flex;align-items:center;gap:12px;background:#141414;padding:10px;border-radius:12px;margin-bottom:8px}
+.admin-product-img{width:50px;height:50px;border-radius:8px;object-fit:cover;background:#2a2a2a;flex-shrink:0}
+.admin-product-info{flex:1;min-width:0}
+.admin-product-name{font-size:13px;font-weight:600;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.admin-product-meta{font-size:11px;color:var(--text-secondary)}
+.admin-product-actions{display:flex;gap:6px;flex-shrink:0}
+.admin-action-btn{width:34px;height:34px;border-radius:9px;border:none;cursor:pointer;display:flex;align-items:center;justify-content:center;background:#2a2a2a;color:#fff}
+.admin-action-btn svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+.admin-action-btn.edit{background:rgba(46,204,113,.15);color:#2ecc71}
+.admin-action-btn.delete{background:rgba(230,57,70,.15);color:#e63946}
+.admin-empty{text-align:center;padding:30px 20px;color:var(--text-secondary);font-size:13px}
+.admin-hint{font-size:11px;color:var(--text-secondary);padding:10px 12px;background:#141414;border-radius:10px;margin-top:12px;line-height:1.5}
+.admin-hint strong{color:var(--accent-orange)}
+.admin-refresh-btn{width:100%;padding:12px;border-radius:12px;background:rgba(46,204,113,.1);border:1px solid rgba(46,204,113,.3);color:#2ecc71;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:14px;display:flex;align-items:center;justify-content:center;gap:8px}
+.admin-refresh-btn svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none}
+.order-card{background:#141414;border-radius:14px;padding:14px;margin-bottom:12px;border-left:3px solid #e63946}
+.order-card.status-new{border-left-color:#e63946}
+.order-card.status-processing{border-left-color:#f4a261}
+.order-card.status-delivered{border-left-color:#2ecc71}
+.order-card.status-cancelled{border-left-color:#666;opacity:.6}
+.order-head{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:8px}
+.order-date{font-size:11px;color:var(--text-secondary)}
+.order-user{font-size:13px;font-weight:700;margin-bottom:2px}
+.order-contacts{font-size:12px;color:#aaa;margin-bottom:8px}
+.order-contacts a{color:var(--accent-blue);text-decoration:none}
+.order-items{background:#0a0a0a;border-radius:10px;padding:10px;margin-bottom:10px}
+.order-item-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.order-item-row:last-child{margin-bottom:0}
+.order-item-name{color:#ddd}
+.order-item-flavor{color:#e63946;font-size:11px}
+.order-total{display:flex;justify-content:space-between;font-size:14px;font-weight:700;margin-top:8px;padding-top:8px;border-top:1px solid #2a2a2a}
+.order-total .val{color:#e63946}
+.order-comment{font-size:12px;color:#ccc;background:#0a0a0a;border-radius:8px;padding:8px 10px;margin-bottom:10px;font-style:italic}
+.order-status-badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:8px;text-transform:uppercase;white-space:nowrap}
+.order-status-badge.new{background:rgba(230,57,70,.2);color:#e63946}
+.order-status-badge.processing{background:rgba(244,162,97,.2);color:#f4a261}
+.order-status-badge.delivered{background:rgba(46,204,113,.2);color:#2ecc71}
+.order-status-badge.cancelled{background:rgba(102,102,102,.3);color:#999}
+.order-status-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.order-status-btn{flex:1;min-width:80px;padding:8px 10px;border-radius:9px;background:#2a2a2a;color:#ccc;border:1px solid transparent;font-size:11px;font-weight:600;cursor:pointer;text-align:center}
+.order-status-btn:active{background:#444}
+.order-status-btn.active{background:rgba(46,204,113,.15);border-color:#2ecc71;color:#2ecc71}
+.order-status-btn.active.cancel{background:rgba(102,102,102,.2);border-color:#666;color:#aaa}
+.order-status-btn.active.process{background:rgba(244,162,97,.15);border-color:#f4a261;color:#f4a261}
+.admin-user-row{display:flex;align-items:flex-start;gap:12px;background:#141414;padding:12px 14px;border-radius:12px;margin-bottom:10px}
+.admin-user-avatar{width:38px;height:38px;border-radius:50%;background:linear-gradient(135deg,#e63946,#c1121f);display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;flex-shrink:0}
+.admin-user-avatar.owner{background:linear-gradient(135deg,#f4a261,#e63946);box-shadow:0 0 0 2px rgba(244,162,97,.3)}
+.admin-user-info{flex:1;min-width:0}
+.admin-user-name{font-size:13px;font-weight:700;margin-bottom:4px}
+.admin-user-role{font-size:11px;color:var(--text-secondary)}
+.admin-user-role.owner{color:#f4a261}
+.admin-user-actions{display:flex;gap:6px;flex-shrink:0;align-self:center}
+.perm-chips{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}
+.perm-chip{font-size:10px;padding:3px 8px;border-radius:6px;font-weight:600}
+.perm-chip.products{background:rgba(46,204,113,.15);color:#2ecc71}
+.perm-chip.admins{background:rgba(155,89,182,.15);color:#b57edc}
+.perm-chip.orders{background:rgba(52,152,219,.15);color:#5dade2}
+.perm-chip.none{background:rgba(230,57,70,.15);color:#e63946}
+.admin-add-card{background:#141414;padding:14px;border-radius:12px;margin-bottom:16px}
+.admin-add-card .admin-form-input{background:#0a0a0a}
+.perm-checkbox-group{display:flex;flex-direction:column;gap:8px;margin-top:10px}
+.perm-checkbox{display:flex;align-items:center;gap:10px;padding:10px 12px;background:#0a0a0a;border-radius:10px;border:1.5px solid transparent;cursor:pointer;transition:all .15s}
+.perm-checkbox.checked{border-color:var(--accent-green);background:rgba(46,204,113,.05)}
+.perm-checkbox input{display:none}
+.perm-checkbox-box{width:20px;height:20px;border-radius:6px;border:2px solid #333;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .15s}
+.perm-checkbox.checked .perm-checkbox-box{background:var(--accent-green);border-color:var(--accent-green)}
+.perm-checkbox-box svg{width:12px;height:12px;stroke:#fff;stroke-width:3;fill:none;opacity:0}
+.perm-checkbox.checked .perm-checkbox-box svg{opacity:1}
+.perm-checkbox-label{flex:1;font-size:13px;font-weight:600}
+.perm-checkbox-desc{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.admin-add-btn{width:100%;padding:13px;border-radius:10px;background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;margin-top:12px}
+.image-upload-row{display:flex;gap:12px;align-items:center}
+.image-preview{width:80px;height:80px;border-radius:10px;background:#141414;border:1px dashed #2a2a2a;display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;position:relative}
+.image-preview img{width:100%;height:100%;object-fit:cover}
+.image-preview .empty-icon{font-size:24px;color:#555}
+.image-upload-controls{flex:1;display:flex;flex-direction:column;gap:6px}
+.image-upload-btn{padding:10px 14px;border-radius:10px;background:#141414;border:1px solid #2a2a2a;color:#fff;font-size:13px;font-weight:600;cursor:pointer;text-align:center;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:6px}
+.image-upload-btn:active{background:#2a2a2a}
+.image-upload-btn svg{width:15px;height:15px;stroke:currentColor;stroke-width:2;fill:none}
+.image-clear-btn{padding:6px 10px;border-radius:8px;background:rgba(230,57,70,.15);border:1px solid rgba(230,57,70,.3);color:#e63946;font-size:11px;font-weight:600;cursor:pointer;font-family:inherit}
+.image-upload-hint{font-size:10px;color:#666;text-align:center}
+.checkout-modal .modal{max-width:420px}
+.checkout-items{background:#0a0a0a;border-radius:12px;padding:12px;margin-bottom:14px;max-height:180px;overflow-y:auto}
+.checkout-item-row{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px solid #1a1a1a}
+.checkout-item-row:last-child{border-bottom:none}
+.checkout-total{display:flex;justify-content:space-between;font-size:15px;font-weight:700;margin-top:10px;padding-top:10px;border-top:1px solid #2a2a2a}
+.checkout-total .val{color:#e63946}
+.delivery-tabs{display:flex;gap:6px;margin-bottom:14px;background:#0a0a0a;padding:4px;border-radius:12px}
+.delivery-tab{flex:1;padding:10px 8px;text-align:center;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;color:var(--text-secondary);background:none;border:none;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:6px}
+.delivery-tab.active{background:var(--accent-red);color:#fff}
+.delivery-tab svg{width:16px;height:16px;stroke:currentColor;stroke-width:2;fill:none}
+.pickup-info{background:var(--block-bg);border-radius:12px;padding:14px;font-size:13px;color:#ddd;line-height:1.5;margin-bottom:14px;display:none}
+.pickup-info.active{display:block}
+.pickup-info strong{color:#fff}
+.sheet-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;justify-content:center;z-index:250;backdrop-filter:blur(3px)}
+.sheet-overlay.active{display:flex}
+.sheet{background:#1a1a1a;width:100%;max-width:480px;border-radius:22px 22px 0 0;max-height:92vh;display:flex;flex-direction:column;animation:sheetIn .3s ease;overflow:hidden}
+@keyframes sheetIn{from{transform:translateY(100%)}to{transform:translateY(0)}}
+.sheet-grip{width:38px;height:4px;background:#333;border-radius:2px;margin:8px auto 4px;flex-shrink:0}
+.sheet-head{padding:10px 18px 14px;display:flex;align-items:flex-start;gap:12px;border-bottom:1px solid #2a2a2a}
+.sheet-img{width:52px;height:52px;border-radius:10px;object-fit:cover;background:#2a2a2a;flex-shrink:0}
+.sheet-head-info{flex:1;min-width:0;padding-right:30px}
+.sheet-cat{font-size:10px;color:var(--text-secondary);text-transform:uppercase;font-weight:600}
+.sheet-name{font-size:14px;font-weight:700;margin:2px 0 4px;line-height:1.2}
+.sheet-price{font-size:15px;font-weight:700;color:#e63946}
+.sheet-price .unit{font-size:11px;color:var(--text-secondary);font-weight:400}
+.sheet-close{position:absolute;right:18px;top:22px;width:30px;height:30px;border-radius:50%;background:#2a2a2a;border:none;color:#aaa;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:5}
+.sheet-header{padding:14px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.sheet-header h3{font-size:13px;font-weight:800;letter-spacing:.5px;text-transform:uppercase}
+.sheet-header h3 span{color:#e63946}
+.sheet-header .count{font-size:11px;color:var(--text-secondary)}
+.sheet-list{padding:0 18px 14px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:8px}
+.flavor-item{background:#232323;border-radius:12px;padding:12px 14px;display:flex;align-items:center;gap:12px;border:1.5px solid transparent;transition:all .15s}
+.flavor-item.selected{border-color:#2ecc71;background:rgba(46,204,113,.08)}
+.flavor-item.out{opacity:.55}
+.flavor-item-info{flex:1;min-width:0}
+.flavor-item-name{font-size:13px;font-weight:700;margin-bottom:3px}
+.flavor-item-stock{font-size:11px;display:flex;align-items:center;gap:4px}
+.flavor-item-stock.avail{color:#f4a261;font-weight:600}
+.flavor-item-stock.out{color:#e63946;font-weight:600}
+.flavor-item-stock svg{width:10px;height:10px;fill:currentColor}
+.flavor-select-btn{padding:8px 16px;border-radius:20px;background:transparent;border:1.5px solid #2ecc71;color:#2ecc71;font-size:12px;font-weight:700;cursor:pointer;white-space:nowrap;flex-shrink:0}
+.flavor-select-btn:active{transform:scale(.95)}
+.flavor-select-btn.selected{background:#2ecc71;color:#fff}
+.flavor-select-btn.disabled{border-color:#333;color:#555;cursor:not-allowed}
+.sheet-footer{padding:12px 18px calc(20px + env(safe-area-inset-bottom,0px));background:#1a1a1a;border-top:1px solid #2a2a2a;flex-shrink:0}
+.sheet-cta{width:100%;padding:15px;border-radius:14px;background:#2a2a2a;color:#666;border:none;font-size:14px;font-weight:700;cursor:not-allowed;transition:all .2s}
+.sheet-cta.active{background:linear-gradient(135deg,#e63946,#c1121f);color:#fff;cursor:pointer;box-shadow:0 4px 15px rgba(230,57,70,.35)}
+.sheet-cta.active:active{transform:scale(.98)}
+.toast{position:fixed;bottom:calc(var(--nav-h) + 20px);left:50%;transform:translateX(-50%) translateY(30px);background:#2ecc71;color:#fff;padding:12px 20px;border-radius:12px;font-size:13px;font-weight:600;z-index:500;box-shadow:0 6px 20px rgba(0,0,0,.4);opacity:0;transition:all .3s;pointer-events:none;max-width:90vw;text-align:center}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+.toast.error{background:#e63946}
+.toast.info{background:#5dade2}
+</style>
+</head>
+<body>
+
+<header class="header">
+<div class="header-left">
+<div class="header-avatar"><img src="https://i.ibb.co/GvYBzcTX/photo-2026-02-15-00-16-32.jpg" alt="Аватар"></div>
+<div class="header-titles">
+<div class="header-title-main">VapeHab</div>
+<div class="header-subtitle">Vape Shop • Работаем пока не сдохнем</div>
+</div>
+</div>
+<div class="header-actions">
+<button class="header-btn" data-action="open-about"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg>О нас</button>
+<button class="header-btn" data-action="open-manager"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Менеджер</button>
+<button class="header-btn"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Тех отдел</button>
+</div>
+</header>
+
+<div id="catalog-screen" class="screen active">
+<div class="promo-banner">
+<img src="https://i.ibb.co/GvYBzcTX/photo-2026-02-15-00-16-32.jpg" alt="Бонусная система">
+<button class="promo-button">Подробнее → →</button>
+<div class="promo-dots"><div class="promo-dot active"></div><div class="promo-dot"></div></div>
+</div>
+<div class="search-container">
+<svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+<input type="text" id="search-input" placeholder="Поиск по вкусу, бренду или модели..." oninput="renderProducts()">
+</div>
+<div class="categories-grid">
+<div class="category-item" data-action="filter-category" data-cat="all"><div class="category-icon cat-all"><svg viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></svg></div><span class="category-label">Все</span></div>
+<div class="category-item" data-action="filter-category" data-cat="pods"><div class="category-icon cat-pods"><svg class="icon-flip-y" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="16" rx="2"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="10" y1="21" x2="14" y2="21"/><rect x="10.5" y="5" width="3" height="2" rx="0.5"/></svg><span class="badge badge-red">TOP</span></div><span class="category-label">POD-системы</span></div>
+<div class="category-item" data-action="filter-category" data-cat="liquids"><div class="category-icon cat-liquids"><svg viewBox="0 0 24 24"><path d="M12 2.69l5.66 5.66a8 8 0 1 1-11.31 0z"/></svg></div><span class="category-label">Жидкости</span></div>
+<div class="category-item" data-action="filter-category" data-cat="disposables"><div class="category-icon cat-disposables"><svg viewBox="0 0 24 24"><rect x="7" y="2" width="10" height="18" rx="3"/><line x1="10" y1="20" x2="14" y2="20"/><circle cx="12" cy="15" r="1.5"/><line x1="10" y1="6" x2="14" y2="6"/></svg><span class="badge badge-orange">HIT</span></div><span class="category-label">Одноразки</span></div>
+<div class="category-item" data-action="filter-category" data-cat="accessories"><div class="category-icon cat-accessories"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><span class="category-label">Расходники</span></div>
+</div>
+<div class="products-section">
+<div class="products-title"><span id="products-title-text">Каталог</span><span class="products-count" id="products-count"></span></div>
+<div class="loading-state" id="loading-state"><div class="spinner"></div><div>Загрузка товаров...</div></div>
+<div class="products-grid" id="products-grid" style="display:none;"></div>
+<div class="empty-state" id="empty-state" style="display:none;">Товаров пока нет.<br>Добавьте их в админке.</div>
+</div>
+</div>
+
+<div id="cart-screen" class="screen"><div class="cart-container"><h1 class="cart-title">Корзина</h1><div id="cart-content"></div></div></div>
+<div id="orders-screen" class="screen"><div class="cart-container"><h1 class="cart-title">Мои заказы</h1><div id="user-orders-content"></div></div></div>
+
+<div id="profile-screen" class="screen">
+<div class="profile-header">
+<div class="avatar" id="user-avatar">V</div>
+<div class="user-info"><h2 id="user-name">Загрузка...</h2><p id="user-username">@...</p><div class="user-id" id="user-id">ID: ...</div></div>
+</div>
+<div class="profile-menu">
+<div class="menu-item admin-item" id="admin-btn" style="display:none;" data-action="open-admin"><span class="menu-icon">🛠</span><span>Админка</span><span class="menu-badge" id="admin-orders-badge" style="display:none;">0</span></div>
+<div class="menu-item"><span class="menu-icon">⭐</span><span>Мои бонусы (0)</span></div>
+<div class="menu-item"><span class="menu-icon">⚙️</span><span>Настройки</span></div>
+<div class="menu-item" data-action="open-support"><span class="menu-icon">💬</span><span>Поддержка</span></div>
+</div>
+</div>
+
+<nav class="bottom-nav">
+<div class="nav-item active" data-tab="catalog" data-action="switch-tab"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg><span class="nav-label">Каталог</span></div>
+<div class="nav-item" data-tab="favorites" data-action="switch-tab"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg><span class="nav-label">Избранное</span></div>
+<div class="nav-item" data-tab="cart" data-action="switch-tab"><svg class="icon-svg" viewBox="0 0 24 24"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg><span class="nav-label">Корзина</span><span class="nav-badge" id="cart-badge" style="display:none;">0</span></div>
+<div class="nav-item" data-tab="orders" data-action="switch-tab"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg><span class="nav-label">Заказы</span></div>
+<div class="nav-item" data-tab="profile" data-action="switch-tab"><svg class="icon-svg" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span class="nav-label">Профиль</span></div>
+</nav>
+
+<div class="modal-overlay" id="about-modal">
+<div class="modal" data-stop-propagation>
+<button class="modal-close" data-action="close-about">✕</button>
+<div class="modal-avatar"><img src="https://i.ibb.co/GvYBzcTX/photo-2026-02-15-00-16-32.jpg" alt="VapeHab"></div>
+<h1 class="modal-title">VapeHab</h1>
+<p class="modal-subtitle">Vape Shop • Работаем пока не сдохнем</p>
+<div class="modal-badges"><div class="modal-badge red">🔞 18+ Строго</div><div class="modal-badge green">✓ 100% Оригинал</div></div>
+<div class="modal-info"><div class="modal-info-icon"><svg viewBox="0 0 24 24"><path d="M12 2l3 7h7l-5.5 4.5 2 7L12 16l-6.5 4.5 2-7L2 9h7z"/></svg></div><div class="modal-info-text">Вся продукция сертифицирована и поставляется напрямую от официальных дистрибьюторов.</div></div>
+<div class="modal-block"><div class="block-icon red"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="block-content"><div class="block-header"><span class="block-title">Режим работы</span><span class="block-status">● Онлайн 24/7</span></div><div class="block-value">Круглосуточно (24/7)</div></div></div>
+<div class="modal-block"><div class="block-icon orange"><svg viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/></svg></div><div class="block-content"><div class="block-header"><span class="block-title">Условия доставки</span></div><div class="block-value small">Бесплатная доставка распространяется до Пл. Пушкина Дальше Пл. Пушкина - 250₽</div></div></div>
+<button class="modal-btn primary" data-action="open-manager"><div class="modal-btn-content"><span class="modal-btn-icon"><svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></span>Связаться с менеджером</div><span class="modal-btn-arrow">↗</span></button>
+<button class="modal-btn dark" data-action="open-channel"><div class="modal-btn-content"><span class="modal-btn-icon"><svg viewBox="0 0 24 24"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg></span>Telegram-канал и отзывы</div><span class="modal-btn-arrow">↗</span></button>
+<button class="modal-close-btn" data-action="close-about">Закрыть</button>
+</div>
+</div>
+
+<div class="modal-overlay checkout-modal" id="checkout-modal">
+<div class="modal" data-stop-propagation>
+<button class="modal-close" data-action="close-checkout">✕</button>
+<h1 class="admin-title" style="margin-bottom:16px;"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Оформление заказа</h1>
+<div class="checkout-items" id="checkout-items"></div>
+<div class="checkout-total"><span>Итого:</span><span class="val" id="checkout-total">0₽</span></div>
+<div style="margin-top:16px;">
+<label class="admin-form-label" style="margin-bottom:8px;">Способ получения</label>
+<div class="delivery-tabs">
+<button class="delivery-tab active" id="tab-delivery" data-action="select-delivery" data-method="delivery"><svg viewBox="0 0 24 24"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>Доставка</button>
+<button class="delivery-tab" id="tab-pickup" data-action="select-delivery" data-method="pickup"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>Самовывоз</button>
+</div>
+</div>
+<div id="address-block"><div class="admin-form-group"><label class="admin-form-label">Адрес доставки *</label><input class="admin-form-input" id="co-address" placeholder="Улица, дом, квартира"></div></div>
+<div class="pickup-info" id="pickup-info"><strong>📍 Пункт самовывоза:</strong><br>г. Москва, ул. Пушкина, д. 10<br><span style="color:#aaa;font-size:12px;">Часы работы: 10:00 – 22:00</span></div>
+<div style="margin-top:16px;">
+<div class="admin-form-group"><label class="admin-form-label">Ваше имя *</label><input class="admin-form-input" id="co-name" placeholder="Иван Иванов"></div>
+<div class="admin-form-group"><label class="admin-form-label">Телефон *</label><input class="admin-form-input" id="co-phone" type="tel" placeholder="+7 (___) ___-__-__"></div>
+<div class="admin-form-group"><label class="admin-form-label">Комментарий к заказу</label><textarea class="admin-form-textarea" id="co-comment" placeholder="Пожелания к заказу..."></textarea></div>
+</div>
+<button class="admin-submit" data-action="submit-order" id="co-submit" style="margin-top:14px;">Подтвердить заказ</button>
+</div>
+</div>
+
+<div class="modal-overlay" id="admin-modal">
+<div class="modal" data-stop-propagation>
+<button class="modal-close" data-action="close-admin">✕</button>
+<h1 class="admin-title"><svg viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Админка</h1>
+<button class="admin-refresh-btn" data-action="refresh-data"><svg viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><polyline points="1 20 1 14 7 14"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>Обновить данные</button>
+<div class="admin-tabs" id="admin-tabs"></div>
+<div class="admin-panel" id="panel-add">
+<input type="hidden" id="edit-id" value="">
+<div class="admin-form-group"><label class="admin-form-label">Название товара *</label><input class="admin-form-input" id="f-name" placeholder="FUNKY LANDS LANDER 20000"></div>
+<div class="admin-form-group"><label class="admin-form-label">Категория *</label><select class="admin-form-select" id="f-category" onchange="updateFlavorsVisibility()"><option value="pods">POD-системы</option><option value="liquids">Жидкости</option><option value="disposables">Одноразки</option><option value="accessories">Расходники</option></select></div>
+<div class="admin-form-row">
+<div class="admin-form-group"><label class="admin-form-label">Цена *</label><input class="admin-form-input" id="f-price" type="number" placeholder="800"></div>
+<div class="admin-form-group"><label class="admin-form-label">Старая цена</label><input class="admin-form-input" id="f-oldprice" type="number" placeholder="1200"></div>
+</div>
+<div class="admin-form-group">
+<label class="admin-form-label">Фото товара</label>
+<div class="image-upload-row">
+<div class="image-preview" id="image-preview"><span class="empty-icon">📷</span></div>
+<div class="image-upload-controls">
+<button type="button" class="image-upload-btn" data-action="upload-image"><svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>Загрузить фото</button>
+<button type="button" class="image-clear-btn" data-action="clear-image">Убрать фото</button>
+<div class="image-upload-hint">JPG, PNG · до 5 МБ</div>
+</div>
+</div>
+<input type="file" id="f-image-file" accept="image/*" style="display:none;">
+<input type="hidden" id="f-image" value="">
+</div>
+<div class="admin-form-group"><label class="admin-form-label">Характеристики</label><input class="admin-form-input" id="f-specs" placeholder="2000 мАч · 60Вт"></div>
+<div class="admin-form-group" id="flavors-group"><label class="admin-form-label" id="flavors-label">Вкусы (Название | Остаток)</label><textarea class="admin-form-textarea" id="f-flavors" style="min-height:120px;" placeholder="Клубника Апельсин | 2&#10;Черника Малина Лед | 0"></textarea></div>
+<div class="admin-form-group" id="stock-group"><label class="admin-form-label">Количество на складе *</label><input class="admin-form-input" id="f-stock" type="number" min="0" placeholder="10"></div>
+<div class="admin-form-group"><label class="admin-form-label">Описание</label><textarea class="admin-form-textarea" id="f-description" placeholder="Подробное описание"></textarea></div>
+<div class="admin-form-group"><label class="admin-form-label">Бейдж</label><select class="admin-form-select" id="f-badge"><option value="">Без бейджа</option><option value="TOP">TOP</option><option value="HIT">HIT</option><option value="NEW">NEW</option></select></div>
+<button class="admin-submit" data-action="save-product" id="submit-btn">Добавить товар</button>
+</div>
+<div class="admin-panel" id="panel-list"><div id="admin-products-list"></div></div>
+<div class="admin-panel" id="panel-admins">
+<div class="admin-add-card">
+<label class="admin-form-label">Выдать админку по username</label>
+<input class="admin-form-input" type="text" id="new-admin-username" placeholder="username без @" autocomplete="off">
+<div class="perm-checkbox-group">
+<label class="perm-checkbox" id="cb-products" data-action="toggle-perm" data-perm="products"><div class="perm-checkbox-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="perm-checkbox-label">🛍 Товары</div><div class="perm-checkbox-desc">Добавлять, редактировать, удалять</div></div></label>
+<label class="perm-checkbox" id="cb-orders" data-action="toggle-perm" data-perm="orders"><div class="perm-checkbox-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="perm-checkbox-label">📦 Заказы</div><div class="perm-checkbox-desc">Смотреть заказы клиентов</div></div></label>
+<label class="perm-checkbox" id="cb-admins" data-action="toggle-perm" data-perm="admins"><div class="perm-checkbox-box"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div><div><div class="perm-checkbox-label">👥 Админы</div><div class="perm-checkbox-desc">Выдавать и забирать доступ</div></div></label>
+</div>
+<button class="admin-add-btn" data-action="add-admin">Выдать доступ</button>
+</div>
+<div id="admin-users-list"></div>
+<div class="admin-hint"><strong>Как работает:</strong> выдал доступ → человеку нужно <strong>закрыть и заново открыть</strong> Mini App. Владелец <strong>@Agoodman9</strong> — с полными правами.</div>
+</div>
+<div class="admin-panel" id="panel-orders"><div id="admin-orders-list"></div></div>
+</div>
+</div>
+
+<div class="sheet-overlay" id="flavor-sheet">
+<div class="sheet" data-stop-propagation>
+<div class="sheet-grip"></div>
+<div style="position:relative;">
+<button class="sheet-close" data-action="close-flavor-sheet">✕</button>
+<div class="sheet-head">
+<img class="sheet-img" id="fs-img" src="" alt="">
+<div class="sheet-head-info"><div class="sheet-cat" id="fs-cat">—</div><div class="sheet-name" id="fs-name">—</div><div class="sheet-price" id="fs-price">—</div></div>
+</div>
+</div>
+<div class="sheet-header"><h3 id="fs-header">ВЫБРАТЬ <span id="fs-header-word">ВКУС</span></h3><span class="count" id="fs-count">Доступно: 0</span></div>
+<div class="sheet-list" id="fs-list"></div>
+<div class="sheet-footer"><button class="sheet-cta" id="fs-cta" data-action="add-to-cart-from-sheet">Выберите хотя бы 1 вариант</button></div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const tg = window.Telegram.WebApp;
+try { tg.expand(); tg.setHeaderColor('#121212'); } catch(e) {}
+
+const JSONBIN_BIN_ID = '6ab574b4ffd5d160532b82e0';
+const JSONBIN_KEY = '$2a$10$jklbojLabuAI27OjJshyJOxAbY3xxV.g1101s8FeoHsWk1Bfe8jQK';
+const JSONBIN_URL = 'https://api.jsonbin.io/v3/b/' + JSONBIN_BIN_ID;
+
+// Категории с вариантами: liquids/disposables = Вкусы, pods = Цвета
+const VARIANT_CATEGORIES = {
+    liquids: { label: 'Вкусы', word: 'ВКУС', singular: 'вкус', placeholder: 'Клубника Апельсин | 2\nЧерника Малина Лед | 0' },
+    disposables: { label: 'Вкусы', word: 'ВКУС', singular: 'вкус', placeholder: 'Клубника Апельсин | 2\nЧерника Малина Лед | 0' },
+    pods: { label: 'Цвета', word: 'ЦВЕТ', singular: 'цвет', placeholder: 'Розовый | 3\nЧёрный | 5\nСиний | 2' }
+};
+const VARIANT_KEYS = Object.keys(VARIANT_CATEGORIES);
+
+const PERM_LABELS = {
+    products: { label: 'Товары', emoji: '🛍', cls: 'products' },
+    orders: { label: 'Заказы', emoji: '📦', cls: 'orders' },
+    admins: { label: 'Админы', emoji: '👥', cls: 'admins' }
+};
+const ALL_PERMS = ['products', 'orders', 'admins'];
+const OWNER_USERNAME = 'Agoodman9';
+
+let isAdmin = false;
+let currentUsername = null;
+let currentUser = null;
+let myPerms = [];
+let currentCategory = 'all';
+let products = [];
+let customAdmins = [];
+let orders = [];
+let cart = [];
+let currentProduct = null;
+let currentFlavorIndex = -1;
+let newAdminPerms = [];
+let selectedDelivery = 'delivery';
+
+const CAT_NAMES = { pods: 'POD-системы', liquids: 'Жидкости', disposables: 'Одноразки', accessories: 'Расходники' };
+const STATUS_LABELS = { new: 'Новый', processing: 'В работе', delivered: 'Доставлен', cancelled: 'Отменён' };
+
+function getVariantInfo(category) {
+    return VARIANT_CATEGORIES[category] || null;
+}
+
+function declineWord(n, category) {
+    const info = getVariantInfo(category);
+    if (!info) return '';
+    const word = info.singular;
+    const m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return word;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 10 || m100 >= 20)) {
+        if (word === 'вкус') return 'вкуса';
+        if (word === 'цвет') return 'цвета';
+        return word + 'а';
+    }
+    if (word === 'вкус') return 'вкусов';
+    if (word === 'цвет') return 'цветов';
+    return word + 'ов';
+}
+
+/* ===== TOAST ===== */
+let toastTimeout = null;
+function showToast(msg, type) {
+    const t = document.getElementById('toast');
+    if (!t) return;
+    t.textContent = msg;
+    t.className = 'toast show' + (type ? ' ' + type : '');
+    if (toastTimeout) clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+
+/* ===== ОБЛАКО ===== */
+async function loadDataFromCloud() {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(function() { controller.abort(); }, 8000);
+    try {
+        const res = await fetch(JSONBIN_URL + '/latest', { headers: { 'X-Master-Key': JSONBIN_KEY }, signal: controller.signal });
+        clearTimeout(timeoutId);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const json = await res.json();
+        const data = json.record || {};
+        products = Array.isArray(data.products) ? data.products : [];
+        customAdmins = normalizeAdmins(data.admins);
+        orders = Array.isArray(data.orders) ? data.orders : [];
+    } catch (e) {
+        clearTimeout(timeoutId);
+        try { products = JSON.parse(localStorage.getItem('vapehab_products') || '[]'); } catch(err) { products = []; }
+        try { customAdmins = normalizeAdmins(JSON.parse(localStorage.getItem('vapehab_admins') || '[]')); } catch(err) { customAdmins = []; }
+        try { orders = JSON.parse(localStorage.getItem('vapehab_orders') || '[]'); } catch(err) { orders = []; }
+    }
+    const ls = document.getElementById('loading-state');
+    if (ls) ls.style.display = 'none';
+    const pg = document.getElementById('products-grid');
+    if (pg) pg.style.display = '';
+    try {
+        renderProducts();
+        checkAdminAccess();
+        renderCart();
+        renderUserOrders();
+        updateAdminOrdersBadge();
+    } catch(err) {}
+}
+
+function normalizeAdmins(raw) {
+    if (!Array.isArray(raw)) return [];
+    return raw.map(function(item) {
+        if (typeof item === 'string') return { username: item, perms: ['products', 'orders', 'admins'] };
+        if (item && typeof item === 'object' && item.username) return { username: item.username, perms: Array.isArray(item.perms) ? item.perms : ['products'] };
+        return null;
+    }).filter(Boolean);
+}
+
+async function saveDataToCloud() {
+    try {
+        const res = await fetch(JSONBIN_URL, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json', 'X-Master-Key': JSONBIN_KEY },
+            body: JSON.stringify({ products: products, admins: customAdmins, orders: orders })
+        });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        return true;
+    } catch (e) {
+        localStorage.setItem('vapehab_products', JSON.stringify(products));
+        localStorage.setItem('vapehab_admins', JSON.stringify(customAdmins));
+        localStorage.setItem('vapehab_orders', JSON.stringify(orders));
+        return false;
+    }
+}
+
+async function refreshData() {
+    showToast('Загрузка...', 'info');
+    await loadDataFromCloud();
+    try { renderAdminList(); renderAdminsList(); renderAdminOrdersList(); renderAdminTabs(); renderUserOrders(); } catch(e) {}
+    showToast('Данные обновлены');
+}
+
+/* ===== ПОЛЬЗОВАТЕЛЬ ===== */
+function loadUserData() {
+    const user = tg.initDataUnsafe && tg.initDataUnsafe.user;
+    if (!user) return;
+    currentUser = user;
+    currentUsername = user.username || null;
+    const firstName = user.first_name || '';
+    const lastName = user.last_name || '';
+    const fullName = (firstName + ' ' + lastName).trim() || 'Пользователь';
+    document.getElementById('user-name').textContent = fullName;
+    document.getElementById('user-username').textContent = currentUsername ? '@' + currentUsername : 'Нет username';
+    document.getElementById('user-id').textContent = 'ID: ' + user.id;
+    const avatarEl = document.getElementById('user-avatar');
+    if (user.photo_url) avatarEl.innerHTML = '<img src="' + user.photo_url + '" alt="Аватар">';
+    else avatarEl.textContent = firstName.charAt(0).toUpperCase() || 'V';
+}
+
+function checkAdminAccess() {
+    myPerms = []; isAdmin = false;
+    if (!currentUsername) { document.getElementById('admin-btn').style.display = 'none'; return; }
+    if (currentUsername === OWNER_USERNAME) { isAdmin = true; myPerms = ALL_PERMS.slice(); }
+    else {
+        const found = customAdmins.find(function(a) { return a.username === currentUsername; });
+        if (found && found.perms && found.perms.length) { isAdmin = true; myPerms = found.perms.slice(); }
+    }
+    document.getElementById('admin-btn').style.display = isAdmin ? 'flex' : 'none';
+    updateAdminOrdersBadge();
+}
+
+function hasPerm(perm) { return myPerms.indexOf(perm) !== -1; }
+
+function updateAdminOrdersBadge() {
+    const badge = document.getElementById('admin-orders-badge');
+    if (!badge) return;
+    if (!isAdmin || !hasPerm('orders')) { badge.style.display = 'none'; return; }
+    const newCount = orders.filter(function(o) { return o.status === 'new'; }).length;
+    if (newCount > 0) { badge.style.display = 'inline-block'; badge.textContent = newCount; }
+    else badge.style.display = 'none';
+}
+
+function selectDelivery(method) {
+    selectedDelivery = method;
+    document.getElementById('tab-delivery').classList.toggle('active', method === 'delivery');
+    document.getElementById('tab-pickup').classList.toggle('active', method === 'pickup');
+    document.getElementById('address-block').style.display = method === 'delivery' ? 'block' : 'none';
+    document.getElementById('pickup-info').classList.toggle('active', method === 'pickup');
+}
+
+/* ===== ЗАГРУЗКА ФОТО ===== */
+function openImagePicker() { document.getElementById('f-image-file').click(); }
+
+function handleImageFile(e) {
+    const file = e.target.files && e.target.files[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { showToast('Это не изображение', 'error'); return; }
+    if (file.size > 5 * 1024 * 1024) { showToast('Файл слишком большой (макс. 5 МБ)', 'error'); return; }
+    showToast('Обработка фото...', 'info');
+    const reader = new FileReader();
+    reader.onload = function(evt) {
+        const img = new Image();
+        img.onload = function() {
+            const maxSize = 400;
+            let w = img.width, h = img.height;
+            if (w > h) { if (w > maxSize) { h = h * maxSize / w; w = maxSize; } }
+            else { if (h > maxSize) { w = w * maxSize / h; h = maxSize; } }
+            const canvas = document.createElement('canvas');
+            canvas.width = Math.round(w); canvas.height = Math.round(h);
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const dataUrl = canvas.toDataURL('image/jpeg', 0.7);
+            document.getElementById('f-image').value = dataUrl;
+            renderImagePreview(dataUrl);
+            showToast('Фото загружено');
+        };
+        img.onerror = function() { showToast('Не удалось прочитать изображение', 'error'); };
+        img.src = evt.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
+}
+
+function renderImagePreview(dataUrl) {
+    const preview = document.getElementById('image-preview');
+    if (!preview) return;
+    if (dataUrl) preview.innerHTML = '<img src="' + dataUrl + '" alt="preview">';
+    else preview.innerHTML = '<span class="empty-icon">📷</span>';
+}
+
+function clearImage() {
+    document.getElementById('f-image').value = '';
+    document.getElementById('f-image-file').value = '';
+    renderImagePreview('');
+    showToast('Фото удалено', 'info');
+}
+
+/* ===== ВИДИМОСТЬ ПОЛЕЙ (ВАРИАНТЫ / КОЛИЧЕСТВО) ===== */
+function updateFlavorsVisibility() {
+    const category = document.getElementById('f-category').value;
+    const flavorsGroup = document.getElementById('flavors-group');
+    const stockGroup = document.getElementById('stock-group');
+    const labelEl = document.getElementById('flavors-label');
+    const textareaEl = document.getElementById('f-flavors');
+    if (!flavorsGroup || !stockGroup) return;
+
+    const info = getVariantInfo(category);
+    if (info) {
+        // Есть варианты (вкусы или цвета)
+        flavorsGroup.style.display = 'block';
+        stockGroup.style.display = 'none';
+        labelEl.textContent = info.label + ' (Название | Остаток)';
+        textareaEl.placeholder = info.placeholder;
+        document.getElementById('f-stock').value = '';
+    } else {
+        // Расходники — только количество
+        flavorsGroup.style.display = 'none';
+        stockGroup.style.display = 'block';
+        document.getElementById('f-flavors').value = '';
+    }
+}
+
+/* ===== КОРЗИНА ===== */
+const C_KEY = 'vapehab_cart_v2';
+function loadCart() {
+    try { cart = JSON.parse(localStorage.getItem(C_KEY) || '[]'); } catch(e) { cart = []; }
+    updateCartBadge();
+    renderCart();
+}
+function saveCart() {
+    localStorage.setItem(C_KEY, JSON.stringify(cart));
+    updateCartBadge();
+    renderCart();
+}
+function updateCartBadge() {
+    const badge = document.getElementById('cart-badge');
+    if (!badge) return;
+    const total = cart.reduce(function(s, i) { return s + i.qty; }, 0);
+    if (total > 0) { badge.style.display = 'block'; badge.textContent = total; }
+    else badge.style.display = 'none';
+}
+
+function renderCart() {
+    const container = document.getElementById('cart-content');
+    if (!container) return;
+    if (!cart.length) {
+        container.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon">🛒</div><div class="cart-empty-text">Корзина пуста</div></div>';
+        return;
+    }
+    const total = cart.reduce(function(s, i) { return s + i.price * i.qty; }, 0);
+    const totalQty = cart.reduce(function(s, i) { return s + i.qty; }, 0);
+    const itemsHtml = cart.map(function(item, idx) {
+        const img = item.image || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23333"%3E%3Cpath d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/%3E%3C/svg%3E';
+        return '<div class="cart-item-wrap"><div class="cart-item"><img class="cart-item-img" src="' + img + '" alt=""><div class="cart-item-info"><div><div class="cart-item-name">' + escapeHtml(item.name) + '</div>' + (item.flavor ? '<div class="cart-item-flavor">' + escapeHtml(item.flavor) + '</div>' : '') + '</div><div class="cart-item-bottom"><div class="cart-item-price">' + (item.price * item.qty) + '₽</div><div class="qty-controls"><button class="qty-btn" data-action="qty-down" data-idx="' + idx + '">−</button><span class="qty-value">' + item.qty + '</span><button class="qty-btn" data-action="qty-up" data-idx="' + idx + '">+</button></div></div></div></div><button class="cart-item-remove" data-action="remove-cart" data-idx="' + idx + '"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>';
+    }).join('');
+    container.innerHTML = itemsHtml + '<div class="cart-summary"><div class="cart-summary-row"><span>Товаров:</span><span>' + totalQty + ' шт.</span></div><div class="cart-summary-row total"><span>Итого:</span><span class="val">' + total + '₽</span></div><button class="cart-checkout-btn" data-action="open-checkout">Оформить заказ</button></div>';
+}
+
+function changeQty(idx, delta) {
+    if (!cart[idx]) return;
+    cart[idx].qty += delta;
+    if (cart[idx].qty <= 0) cart.splice(idx, 1);
+    saveCart();
+}
+function removeFromCart(idx) {
+    if (!cart[idx]) return;
+    cart.splice(idx, 1);
+    saveCart();
+}
+
+function addToCart(product, flavorName) {
+    const key = product.id + (flavorName ? '::' + flavorName : '');
+    const existing = cart.find(function(i) { return i.key === key; });
+    if (existing) existing.qty += 1;
+    else cart.push({ key: key, productId: product.id, name: product.name, flavor: flavorName || null, price: product.price, image: product.image || '', qty: 1 });
+    saveCart();
+    showToast('Добавлено: ' + product.name + (flavorName ? ' · ' + flavorName : ''));
+}
+
+function quickAddToCart(productId) {
+    const p = products.find(function(x) { return x.id === productId; });
+    if (!p) return;
+    addToCart(p, null);
+}
+
+/* ===== ОФОРМЛЕНИЕ ===== */
+function openCheckout() {
+    if (!cart.length) { showToast('Корзина пуста', 'error'); return; }
+    const firstName = (currentUser && currentUser.first_name) || '';
+    const lastName = (currentUser && currentUser.last_name) || '';
+    document.getElementById('co-name').value = (firstName + ' ' + lastName).trim();
+    document.getElementById('co-phone').value = '';
+    document.getElementById('co-address').value = '';
+    document.getElementById('co-comment').value = '';
+    document.getElementById('checkout-items').innerHTML = cart.map(function(item) {
+        return '<div class="checkout-item-row"><div><div>' + escapeHtml(item.name) + ' × ' + item.qty + '</div>' + (item.flavor ? '<div style="font-size:10px;color:#e63946;">' + escapeHtml(item.flavor) + '</div>' : '') + '</div><div>' + (item.price * item.qty) + '₽</div></div>';
+    }).join('');
+    const total = cart.reduce(function(s, i) { return s + i.price * i.qty; }, 0);
+    document.getElementById('checkout-total').textContent = total + '₽';
+    selectDelivery('delivery');
+    document.getElementById('checkout-modal').classList.add('active');
+}
+function closeCheckout() { document.getElementById('checkout-modal').classList.remove('active'); }
+
+async function submitOrder() {
+    const name = document.getElementById('co-name').value.trim();
+    const phone = document.getElementById('co-phone').value.trim();
+    const address = document.getElementById('co-address').value.trim();
+    const comment = document.getElementById('co-comment').value.trim();
+    if (!name) { showToast('Введи имя', 'error'); return; }
+    if (!phone) { showToast('Введи телефон', 'error'); return; }
+    if (selectedDelivery === 'delivery' && !address) { showToast('Введи адрес', 'error'); return; }
+    const total = cart.reduce(function(s, i) { return s + i.price * i.qty; }, 0);
+    const order = {
+        id: 'o_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+        userId: (currentUser && currentUser.id) || 0,
+        username: currentUsername || '',
+        firstName: (currentUser && currentUser.first_name) || '',
+        lastName: (currentUser && currentUser.last_name) || '',
+        tgName: name, phone: phone,
+        address: selectedDelivery === 'pickup' ? 'Самовывоз' : address,
+        deliveryMethod: selectedDelivery, comment: comment,
+        items: cart.map(function(i) { return { name: i.name, flavor: i.flavor, price: i.price, qty: i.qty }; }),
+        total: total, status: 'new', createdAt: new Date().toISOString()
+    };
+    orders.unshift(order);
+    cart = [];
+    saveCart();
+    const btn = document.getElementById('co-submit');
+    btn.disabled = true; btn.textContent = 'Отправка...';
+    await saveDataToCloud();
+    btn.disabled = false; btn.textContent = 'Подтвердить заказ';
+    closeCheckout();
+    updateAdminOrdersBadge();
+    showToast('Заказ оформлен!');
+    switchTab('orders');
+}
+
+/* ===== МОИ ЗАКАЗЫ ===== */
+function renderUserOrders() {
+    const container = document.getElementById('user-orders-content');
+    if (!container) return;
+    const userId = currentUser && currentUser.id;
+    const myOrders = orders.filter(function(o) { return o.userId === userId; });
+    if (!myOrders.length) {
+        container.innerHTML = '<div class="cart-empty"><div class="cart-empty-icon">📦</div><div class="cart-empty-text">У вас пока нет заказов</div></div>';
+        return;
+    }
+    container.innerHTML = myOrders.map(function(o) {
+        const date = new Date(o.createdAt);
+        const dateStr = date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const itemsHtml = (o.items || []).map(function(i) {
+            return '<div class="user-order-item"><div><div>' + escapeHtml(i.name) + ' × ' + i.qty + '</div>' + (i.flavor ? '<div class="user-order-item-flavor">' + escapeHtml(i.flavor) + '</div>' : '') + '</div><div>' + (i.price * i.qty) + '₽</div></div>';
+        }).join('');
+        return '<div class="user-order-card status-' + o.status + '"><div class="user-order-head"><div><div class="user-order-id">Заказ #' + o.id.slice(-6) + '</div><div class="user-order-date">' + dateStr + '</div></div><span class="user-order-status-badge ' + o.status + '">' + (STATUS_LABELS[o.status] || o.status) + '</span></div><div class="user-order-items">' + itemsHtml + '</div><div class="user-order-address">📍 ' + escapeHtml(o.address || '') + '</div>' + (o.comment ? '<div style="font-size:12px;color:#ccc;font-style:italic;margin-bottom:8px;">"' + escapeHtml(o.comment) + '"</div>' : '') + '<div class="user-order-total"><span>Итого:</span><span class="val">' + o.total + '₽</span></div></div>';
+    }).join('');
+}
+
+/* ===== АДМИНКА ===== */
+function openAdmin() {
+    if (!isAdmin) return;
+    document.getElementById('admin-modal').classList.add('active');
+    renderAdminTabs();
+    renderAdminList();
+    renderAdminsList();
+    renderAdminOrdersList();
+    updateFlavorsVisibility();
+    setTimeout(function() { const firstTab = document.querySelector('.admin-tab'); if (firstTab) firstTab.click(); }, 10);
+}
+function closeAdmin() { document.getElementById('admin-modal').classList.remove('active'); }
+
+function renderAdminTabs() {
+    const container = document.getElementById('admin-tabs');
+    const tabs = [];
+    if (hasPerm('products')) tabs.push({ id: 'add', label: 'Добавить' });
+    if (hasPerm('products')) tabs.push({ id: 'list', label: 'Товары' });
+    if (hasPerm('orders')) tabs.push({ id: 'orders', label: 'Заказы' + (orders.filter(function(o){return o.status==='new';}).length ? ' 🔴' : '') });
+    if (hasPerm('admins')) tabs.push({ id: 'admins', label: 'Админы' });
+    if (!tabs.length) { container.innerHTML = '<div style="text-align:center;padding:20px;color:#666;font-size:13px;">Нет доступных разделов</div>'; return; }
+    container.innerHTML = tabs.map(function(t) { return '<button class="admin-tab" data-tab="' + t.id + '" data-action="admin-tab">' + t.label + '</button>'; }).join('');
+}
+
+function adminTab(tab) {
+    document.querySelectorAll('.admin-tab').forEach(function(t) { t.classList.toggle('active', t.dataset.tab === tab); });
+    document.querySelectorAll('.admin-panel').forEach(function(p) { p.classList.remove('active'); });
+    const panel = document.getElementById('panel-' + tab);
+    if (panel) panel.classList.add('active');
+    if (tab === 'list') renderAdminList();
+    if (tab === 'admins') renderAdminsList();
+    if (tab === 'orders') renderAdminOrdersList();
+    if (tab === 'add') updateFlavorsVisibility();
+}
+
+function parseFlavors(text) {
+    if (!text) return [];
+    return text.split('\n').map(function(l) { return l.trim(); }).filter(function(l) { return l.length; })
+        .map(function(line) {
+            const parts = line.split('|').map(function(s) { return s.trim(); });
+            return { name: parts[0] || '', stock: parseInt(parts[1]) || 0 };
+        }).filter(function(f) { return f.name; });
+}
+function flavorsToString(flavors) {
+    if (!flavors || !flavors.length) return '';
+    return flavors.map(function(f) { return f.name + ' | ' + f.stock; }).join('\n');
+}
+
+async function saveProduct() {
+    if (!hasPerm('products')) return;
+    const name = document.getElementById('f-name').value.trim();
+    const category = document.getElementById('f-category').value;
+    const price = parseInt(document.getElementById('f-price').value) || 0;
+    const oldPrice = parseInt(document.getElementById('f-oldprice').value) || 0;
+    const image = document.getElementById('f-image').value.trim();
+    const specs = document.getElementById('f-specs').value.trim();
+    const description = document.getElementById('f-description').value.trim();
+    const badge = document.getElementById('f-badge').value;
+    const editId = document.getElementById('edit-id').value;
+
+    const info = getVariantInfo(category);
+    const hasVariants = !!info;
+    const flavors = hasVariants ? parseFlavors(document.getElementById('f-flavors').value) : [];
+    const manualStock = parseInt(document.getElementById('f-stock').value) || 0;
+
+    if (!name || !price) { showToast('Заполните название и цену', 'error'); return; }
+    if (!hasVariants && manualStock <= 0) { showToast('Укажите количество на складе', 'error'); return; }
+
+    const totalStock = hasVariants
+        ? (flavors.length ? flavors.reduce(function(s, f) { return s + (f.stock || 0); }, 0) : 0)
+        : manualStock;
+
+    const data = {
+        name: name, category: category, price: price, oldPrice: oldPrice,
+        image: image, specs: specs, flavors: flavors, description: description,
+        badge: badge, stock: totalStock
+    };
+
+    if (editId) {
+        const idx = products.findIndex(function(p) { return p.id === editId; });
+        if (idx !== -1) products[idx] = Object.assign({}, products[idx], data);
+    } else {
+        products.unshift(Object.assign({ id: 'p_' + Date.now() + '_' + Math.random().toString(36).slice(2, 7) }, data));
+    }
+    const btn = document.getElementById('submit-btn');
+    btn.disabled = true; btn.textContent = 'Сохранение...';
+    renderProducts();
+    renderAdminList();
+    clearForm();
+    const ok = await saveDataToCloud();
+    btn.disabled = false;
+    if (ok) showToast(editId ? 'Обновлено' : 'Добавлено');
+}
+
+function clearForm() {
+    document.getElementById('edit-id').value = '';
+    document.getElementById('f-name').value = '';
+    document.getElementById('f-category').value = 'pods';
+    document.getElementById('f-price').value = '';
+    document.getElementById('f-oldprice').value = '';
+    document.getElementById('f-image').value = '';
+    document.getElementById('f-specs').value = '';
+    document.getElementById('f-flavors').value = '';
+    document.getElementById('f-stock').value = '';
+    document.getElementById('f-description').value = '';
+    document.getElementById('f-badge').value = '';
+    document.getElementById('submit-btn').textContent = 'Добавить товар';
+    renderImagePreview('');
+    updateFlavorsVisibility();
+}
+
+function editProduct(id) {
+    if (!hasPerm('products')) return;
+    const p = products.find(function(x) { return x.id === id; });
+    if (!p) return;
+    document.getElementById('edit-id').value = p.id;
+    document.getElementById('f-name').value = p.name || '';
+    document.getElementById('f-category').value = p.category || 'pods';
+    document.getElementById('f-price').value = p.price || '';
+    document.getElementById('f-oldprice').value = p.oldPrice || '';
+    document.getElementById('f-image').value = p.image || '';
+    document.getElementById('f-specs').value = p.specs || '';
+    document.getElementById('f-flavors').value = flavorsToString(p.flavors);
+    const hasVariants = !!getVariantInfo(p.category);
+    document.getElementById('f-stock').value = hasVariants ? '' : (p.stock || '');
+    document.getElementById('f-description').value = p.description || '';
+    document.getElementById('f-badge').value = p.badge || '';
+    document.getElementById('submit-btn').textContent = 'Сохранить изменения';
+    renderImagePreview(p.image || '');
+    updateFlavorsVisibility();
+    adminTab('add');
+}
+
+async function deleteProduct(id) {
+    if (!hasPerm('products')) return;
+    if (!confirm('Удалить товар?')) return;
+    products = products.filter(function(p) { return p.id !== id; });
+    renderProducts();
+    renderAdminList();
+    await saveDataToCloud();
+}
+
+function renderAdminList() {
+    const container = document.getElementById('admin-products-list');
+    if (!container) return;
+    if (!products.length) { container.innerHTML = '<div class="admin-empty">Товаров пока нет</div>'; return; }
+    container.innerHTML = products.map(function(p) {
+        const info = getVariantInfo(p.category);
+        const variantsInfo = p.flavors && p.flavors.length ? ' · ' + p.flavors.length + ' ' + (info ? info.singular : 'вар.') + '.' : '';
+        const stockInfo = !getVariantInfo(p.category) && p.stock ? ' · ' + p.stock + ' шт.' : '';
+        return '<div class="admin-product-row"><img class="admin-product-img" src="' + (p.image || '') + '" alt="" onerror="this.style.display=\'none\'"><div class="admin-product-info"><div class="admin-product-name">' + escapeHtml(p.name) + '</div><div class="admin-product-meta">' + (CAT_NAMES[p.category] || p.category) + ' • ' + p.price + '₽' + variantsInfo + stockInfo + '</div></div><div class="admin-product-actions"><button class="admin-action-btn edit" data-action="edit-product" data-id="' + p.id + '"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="admin-action-btn delete" data-action="delete-product" data-id="' + p.id + '"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div></div>';
+    }).join('');
+}
+
+function togglePerm(perm) {
+    const idx = newAdminPerms.indexOf(perm);
+    if (idx === -1) newAdminPerms.push(perm);
+    else newAdminPerms.splice(idx, 1);
+    document.getElementById('cb-' + perm).classList.toggle('checked', newAdminPerms.indexOf(perm) !== -1);
+}
+function resetPermCheckboxes() {
+    newAdminPerms = [];
+    ['products', 'orders', 'admins'].forEach(function(p) { document.getElementById('cb-' + p).classList.remove('checked'); });
+}
+
+async function addAdmin() {
+    if (!hasPerm('admins')) return;
+    const input = document.getElementById('new-admin-username');
+    let username = input.value.trim().replace(/^@/, '');
+    if (!username) { showToast('Введи username', 'error'); return; }
+    if (username === OWNER_USERNAME) { showToast('Владелец уже админ', 'error'); return; }
+    if (customAdmins.find(function(a) { return a.username === username; })) { showToast('Уже админ', 'error'); return; }
+    if (!newAdminPerms.length) { showToast('Выбери хотя бы одно право', 'error'); return; }
+    customAdmins.push({ username: username, perms: newAdminPerms.slice() });
+    input.value = '';
+    resetPermCheckboxes();
+    renderAdminsList();
+    const ok = await saveDataToCloud();
+    if (ok) showToast('@' + username + ' теперь админ');
+}
+
+async function removeAdmin(username) {
+    if (!hasPerm('admins')) return;
+    if (username === OWNER_USERNAME) { showToast('Владельца нельзя удалить', 'error'); return; }
+    if (!confirm('Забрать админку у @' + username + '?')) return;
+    customAdmins = customAdmins.filter(function(a) { return a.username !== username; });
+    renderAdminsList();
+    await saveDataToCloud();
+}
+
+function editAdminPerms(username) {
+    if (!hasPerm('admins')) return;
+    if (username === OWNER_USERNAME) { showToast('У владельца все права', 'error'); return; }
+    const admin = customAdmins.find(function(a) { return a.username === username; });
+    if (!admin) return;
+    const currentNums = admin.perms.map(function(p) { return ALL_PERMS.indexOf(p) + 1; }).join(',');
+    const newPerms = prompt('Права для @' + username + '\n\n1 — Товары\n2 — Заказы\n3 — Админы\n\nВведи цифры через запятую:', currentNums);
+    if (newPerms === null) return;
+    const parsed = newPerms.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s.match(/^[123]$/); }).map(function(n) { return ALL_PERMS[parseInt(n) - 1]; }).filter(Boolean);
+    const unique = [];
+    parsed.forEach(function(p) { if (unique.indexOf(p) === -1) unique.push(p); });
+    admin.perms = unique;
+    renderAdminsList();
+    saveDataToCloud().then(function(ok) { if (ok) showToast('Права обновлены'); });
+}
+
+function renderAdminsList() {
+    const container = document.getElementById('admin-users-list');
+    if (!container) return;
+    let html = '<div class="admin-user-row"><div class="admin-user-avatar owner">' + OWNER_USERNAME.charAt(0).toUpperCase() + '</div><div class="admin-user-info"><div class="admin-user-name">@' + OWNER_USERNAME + '</div><div class="admin-user-role owner">👑 Владелец</div><div class="perm-chips"><span class="perm-chip products">🛍 Товары</span><span class="perm-chip orders">📦 Заказы</span><span class="perm-chip admins">👥 Админы</span></div></div></div>';
+    if (!customAdmins.length) {
+        html += '<div class="admin-empty" style="padding:20px 0;">Больше админов пока нет</div>';
+    } else {
+        html += customAdmins.map(function(a) {
+            const permsHtml = a.perms && a.perms.length
+                ? a.perms.map(function(p) {
+                    const info = PERM_LABELS[p] || { label: p, emoji: '❓', cls: 'none' };
+                    return '<span class="perm-chip ' + info.cls + '">' + info.emoji + ' ' + info.label + '</span>';
+                }).join('')
+                : '<span class="perm-chip none">Нет прав</span>';
+            return '<div class="admin-user-row"><div class="admin-user-avatar">' + a.username.charAt(0).toUpperCase() + '</div><div class="admin-user-info"><div class="admin-user-name">@' + escapeHtml(a.username) + '</div><div class="perm-chips">' + permsHtml + '</div></div><div class="admin-user-actions"><button class="admin-action-btn edit" data-action="edit-admin-perms" data-username="' + escapeHtml(a.username) + '"><svg viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg></button><button class="admin-action-btn delete" data-action="remove-admin" data-username="' + escapeHtml(a.username) + '"><svg viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg></button></div></div>';
+        }).join('');
+    }
+    container.innerHTML = html;
+}
+
+function renderAdminOrdersList() {
+    const container = document.getElementById('admin-orders-list');
+    if (!container) return;
+    if (!orders.length) { container.innerHTML = '<div class="admin-empty">Заказов пока нет</div>'; return; }
+    container.innerHTML = orders.map(function(o) {
+        const date = new Date(o.createdAt);
+        const dateStr = date.toLocaleString('ru-RU', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' });
+        const itemsHtml = (o.items || []).map(function(i) {
+            return '<div class="order-item-row"><div><div class="order-item-name">' + escapeHtml(i.name) + ' × ' + i.qty + '</div>' + (i.flavor ? '<div class="order-item-flavor">' + escapeHtml(i.flavor) + '</div>' : '') + '</div><div>' + (i.price * i.qty) + '₽</div></div>';
+        }).join('');
+        const deliveryLabel = o.deliveryMethod === 'pickup' ? '🏪 Самовывоз' : '🚚 Доставка';
+        return '<div class="order-card status-' + o.status + '"><div class="order-head"><div><div class="order-user">' + escapeHtml(o.tgName || (o.firstName + ' ' + (o.lastName || '')).trim()) + '</div><div class="order-contacts">' + (o.username ? '@' + escapeHtml(o.username) + ' · ' : '') + '<a href="tel:' + escapeHtml(o.phone) + '">' + escapeHtml(o.phone) + '</a></div></div><span class="order-status-badge ' + o.status + '">' + (STATUS_LABELS[o.status] || o.status) + '</span></div><div class="order-date">' + dateStr + ' · ID: ' + o.id.slice(-6) + ' · ' + deliveryLabel + '</div><div style="font-size:12px;color:#aaa;margin:8px 0;">📍 ' + escapeHtml(o.address || '') + '</div><div class="order-items">' + itemsHtml + '</div>' + (o.comment ? '<div class="order-comment">"' + escapeHtml(o.comment) + '"</div>' : '') + '<div class="order-total"><span>Итого:</span><span class="val">' + o.total + '₽</span></div><div class="order-status-row"><button class="order-status-btn ' + (o.status === 'new' ? 'active' : '') + '" data-action="set-order-status" data-id="' + o.id + '" data-status="new">Новый</button><button class="order-status-btn ' + (o.status === 'processing' ? 'active process' : '') + '" data-action="set-order-status" data-id="' + o.id + '" data-status="processing">В работе</button><button class="order-status-btn ' + (o.status === 'delivered' ? 'active' : '') + '" data-action="set-order-status" data-id="' + o.id + '" data-status="delivered">Доставлен</button><button class="order-status-btn ' + (o.status === 'cancelled' ? 'active cancel' : '') + '" data-action="set-order-status" data-id="' + o.id + '" data-status="cancelled">Отмена</button></div></div>';
+    }).join('');
+}
+
+async function setOrderStatus(id, status) {
+    if (!hasPerm('orders')) return;
+    const order = orders.find(function(o) { return o.id === id; });
+    if (!order) return;
+    order.status = status;
+    renderAdminOrdersList();
+    renderAdminTabs();
+    renderUserOrders();
+    updateAdminOrdersBadge();
+    await saveDataToCloud();
+}
+
+/* ===== КАТАЛОГ ===== */
+function filterByCategory(cat) { currentCategory = cat; renderProducts(); }
+
+function getProductTotalStock(p) {
+    if (!p.flavors || !p.flavors.length) return p.stock || 0;
+    return p.flavors.reduce(function(s, f) { return s + (f.stock || 0); }, 0);
+}
+
+function renderProducts() {
+    const grid = document.getElementById('products-grid');
+    const emptyState = document.getElementById('empty-state');
+    const countEl = document.getElementById('products-count');
+    const titleEl = document.getElementById('products-title-text');
+    if (!grid) return;
+    const q = (document.getElementById('search-input').value || '').toLowerCase().trim();
+    let filtered = products.slice();
+    if (currentCategory !== 'all') filtered = filtered.filter(function(p) { return p.category === currentCategory; });
+    if (q) {
+        filtered = filtered.filter(function(p) {
+            if ((p.name || '').toLowerCase().indexOf(q) !== -1) return true;
+            if ((p.description || '').toLowerCase().indexOf(q) !== -1) return true;
+            if (p.flavors && p.flavors.some(function(f) { return (f.name || '').toLowerCase().indexOf(q) !== -1; })) return true;
+            return false;
+        });
+    }
+    titleEl.textContent = CAT_NAMES[currentCategory] || 'Каталог';
+    countEl.textContent = filtered.length ? filtered.length + ' шт.' : '';
+    if (!filtered.length) { grid.innerHTML = ''; emptyState.style.display = 'block'; return; }
+    emptyState.style.display = 'none';
+    grid.innerHTML = filtered.map(function(p) {
+        const badge = p.badge ? '<span class="product-badge ' + p.badge.toLowerCase() + '">' + p.badge + '</span>' : '';
+        const oldPrice = p.oldPrice ? '<span class="product-old-price">' + p.oldPrice + '₽</span>' : '';
+        const imgSrc = p.image || 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="%23333"%3E%3Cpath d="M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z"/%3E%3C/svg%3E';
+        let variantTags = '';
+        if (p.flavors && p.flavors.length) {
+            const shown = p.flavors.slice(0, 2);
+            variantTags = '<div class="product-flavors">' + shown.map(function(f) { return '<span class="flavor-tag">' + escapeHtml(f.name) + '</span>'; }).join('') + (p.flavors.length > 2 ? '<span class="flavor-more">Ещё ' + (p.flavors.length - 2) + '</span>' : '') + '</div>';
+        }
+        const specs = p.specs ? '<div class="product-specs">' + escapeHtml(p.specs) + '</div>' : '';
+        const totalStock = getProductTotalStock(p);
+        const stockHtml = totalStock > 0 ? '<div class="product-stock"><span class="dot"></span>В наличии' + (!p.flavors || !p.flavors.length ? ' · ' + totalStock + ' шт.' : '') + '</div>' : '<div class="product-stock out"><span class="dot"></span>Нет в наличии</div>';
+        const info = getVariantInfo(p.category);
+        const needVariants = !!info;
+        const btnText = needVariants ? (p.category === 'pods' ? 'Выбрать цвет' : 'Выбрать вкус') : 'В корзину';
+        const btnAction = needVariants ? 'open-flavor' : 'quick-add';
+        return '<div class="product-card"><div class="product-wrap"><img class="product-image" src="' + imgSrc + '" alt="' + escapeHtml(p.name) + '" loading="lazy" onerror="this.src=\'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 24 24%22 fill=%22%23333%22%3E%3Cpath d=%22M21 19V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2z%22/%3E%3C/svg%3E\'">' + badge + '</div><div class="product-info"><div class="product-category">' + (CAT_NAMES[p.category] || p.category) + '</div><div class="product-name">' + escapeHtml(p.name) + '</div>' + variantTags + specs + '<div class="product-price-row"><span class="product-price">' + p.price + '₽</span>' + oldPrice + '</div>' + stockHtml + '<button class="btn-flavor" data-action="' + btnAction + '" data-id="' + p.id + '">' + btnText + '</button></div></div>';
+    }).join('');
+}
+
+function escapeHtml(s) {
+    return String(s || '').replace(/[&<>"']/g, function(c) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+    });
+}
+
+/* ===== BOTTOM SHEET ВАРИАНТОВ ===== */
+function openFlavorSheet(productId) {
+    const p = products.find(function(x) { return x.id === productId; });
+    if (!p) return;
+    if (!p.flavors || !p.flavors.length) { quickAddToCart(productId); return; }
+    currentProduct = p;
+    currentFlavorIndex = -1;
+    document.getElementById('fs-img').src = p.image || '';
+    document.getElementById('fs-cat').textContent = CAT_NAMES[p.category] || p.category;
+    document.getElementById('fs-name').textContent = p.name;
+    document.getElementById('fs-price').innerHTML = p.price + '₽ <span class="unit">/шт</span>';
+
+    const info = getVariantInfo(p.category) || { word: 'ВАРИАНТ', singular: 'вариант' };
+    document.getElementById('fs-header-word').textContent = info.word;
+
+    const availableCount = (p.flavors || []).filter(function(f) { return (f.stock || 0) > 0; }).length;
+    const countEl = document.getElementById('fs-count');
+    if (availableCount === 0) {
+        countEl.textContent = 'Нет в наличии';
+        countEl.style.color = '#e63946';
+    } else {
+        countEl.textContent = 'Доступно: ' + availableCount + ' ' + declineWord(availableCount, p.category);
+        countEl.style.color = '';
+    }
+
+    renderFlavorList();
+    updateSheetCTA();
+    document.getElementById('flavor-sheet').classList.add('active');
+}
+
+function renderFlavorList() {
+    const list = document.getElementById('fs-list');
+    const flavors = currentProduct.flavors || [];
+    if (!flavors.length) { list.innerHTML = ''; return; }
+    list.innerHTML = flavors.map(function(f, i) {
+        const inStock = (f.stock || 0) > 0;
+        const selected = i === currentFlavorIndex;
+        const stockText = inStock ? '<svg viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> Осталось: ' + f.stock + ' шт.' : '✕ Закончился';
+        const stockClass = inStock ? 'avail' : 'out';
+        const btnClass = 'flavor-select-btn' + (selected ? ' selected' : '') + (inStock ? '' : ' disabled');
+        const btnText = !inStock ? 'Нет' : (selected ? '✓ Выбрано' : '+ Выбрать');
+        const dataAction = inStock ? ' data-action="select-flavor" data-idx="' + i + '"' : '';
+        return '<div class="flavor-item ' + (selected ? 'selected' : '') + ' ' + (!inStock ? 'out' : '') + '"><div class="flavor-item-info"><div class="flavor-item-name">' + escapeHtml(f.name) + '</div><div class="flavor-item-stock ' + stockClass + '">' + stockText + '</div></div><button class="' + btnClass + '"' + dataAction + '>' + btnText + '</button></div>';
+    }).join('');
+}
+
+function selectFlavor(index) {
+    const f = currentProduct.flavors[index];
+    if (!f || (f.stock || 0) <= 0) return;
+    if (currentFlavorIndex === index) currentFlavorIndex = -1;
+    else currentFlavorIndex = index;
+    renderFlavorList();
+    updateSheetCTA();
+}
+
+function updateSheetCTA() {
+    const cta = document.getElementById('fs-cta');
+    const info = getVariantInfo(currentProduct.category) || { singular: 'вариант' };
+    if (currentFlavorIndex === -1) {
+        cta.classList.remove('active');
+        cta.textContent = 'Выберите хотя бы 1 ' + info.singular;
+    } else {
+        const f = currentProduct.flavors[currentFlavorIndex];
+        cta.classList.add('active');
+        cta.textContent = 'Добавить «' + f.name + '» · ' + currentProduct.price + '₽';
+    }
+}
+
+function closeFlavorSheet() {
+    document.getElementById('flavor-sheet').classList.remove('active');
+    currentProduct = null;
+    currentFlavorIndex = -1;
+}
+
+function addToCartFromSheet() {
+    if (currentFlavorIndex === -1 || !currentProduct) return;
+    const f = currentProduct.flavors[currentFlavorIndex];
+    addToCart(currentProduct, f.name);
+    closeFlavorSheet();
+}
+
+/* ===== НАВИГАЦИЯ ===== */
+function switchTab(tab) {
+    document.querySelectorAll('.nav-item').forEach(function(el) { el.classList.toggle('active', el.dataset.tab === tab); });
+    document.querySelectorAll('.screen').forEach(function(s) { s.classList.remove('active'); });
+    const headerTitle = document.querySelector('.header-title-main');
+    if (tab === 'catalog') { document.getElementById('catalog-screen').classList.add('active'); headerTitle.innerText = 'VapeHab'; }
+    else if (tab === 'cart') { document.getElementById('cart-screen').classList.add('active'); headerTitle.innerText = 'Корзина'; renderCart(); }
+    else if (tab === 'orders') { document.getElementById('orders-screen').classList.add('active'); headerTitle.innerText = 'Мои заказы'; renderUserOrders(); }
+    else if (tab === 'profile') { document.getElementById('profile-screen').classList.add('active'); headerTitle.innerText = 'Профиль'; }
+    else { headerTitle.innerText = tab.charAt(0).toUpperCase() + tab.slice(1); }
+    const activeScreen = document.querySelector('.screen.active');
+    if (activeScreen) activeScreen.scrollTop = 0;
+}
+
+function openAbout() { document.getElementById('about-modal').classList.add('active'); }
+function closeAbout() { document.getElementById('about-modal').classList.remove('active'); }
+function openManager() { try { tg.openTelegramLink('https://t.me/vVapeHab'); } catch(e) { window.open('https://t.me/vVapeHab', '_blank'); } }
+function openChannel() { try { tg.openTelegramLink('https://t.me/vvvVapeHab'); } catch(e) { window.open('https://t.me/vvvVapeHab', '_blank'); } }
+function openSupport() { try { tg.openTelegramLink('https://t.me/vVapeHab'); } catch(e) { window.open('https://t.me/vVapeHab', '_blank'); } }
+
+/* ===== ГЛАВНЫЙ ОБРАБОТЧИК КЛИКОВ ===== */
+document.addEventListener('click', function(e) {
+    const el = e.target.closest('[data-action]');
+    if (!el) {
+        if (e.target.classList.contains('modal-overlay') && e.target.classList.contains('active')) e.target.classList.remove('active');
+        if (e.target.classList.contains('sheet-overlay') && e.target.classList.contains('active')) e.target.classList.remove('active');
+        return;
+    }
+    const action = el.dataset.action;
+    switch (action) {
+        case 'open-about': openAbout(); break;
+        case 'close-about': closeAbout(); break;
+        case 'open-manager': openManager(); break;
+        case 'open-channel': openChannel(); break;
+        case 'open-support': openSupport(); break;
+        case 'open-admin': openAdmin(); break;
+        case 'close-admin': closeAdmin(); break;
+        case 'open-checkout': openCheckout(); break;
+        case 'close-checkout': closeCheckout(); break;
+        case 'submit-order': submitOrder(); break;
+        case 'refresh-data': refreshData(); break;
+        case 'switch-tab': switchTab(el.dataset.tab); break;
+        case 'filter-category': filterByCategory(el.dataset.cat); break;
+        case 'admin-tab': adminTab(el.dataset.tab); break;
+        case 'open-flavor': openFlavorSheet(el.dataset.id); break;
+        case 'quick-add': quickAddToCart(el.dataset.id); break;
+        case 'close-flavor-sheet': closeFlavorSheet(); break;
+        case 'select-flavor': selectFlavor(parseInt(el.dataset.idx)); break;
+        case 'add-to-cart-from-sheet': addToCartFromSheet(); break;
+        case 'qty-up': changeQty(parseInt(el.dataset.idx), 1); break;
+        case 'qty-down': changeQty(parseInt(el.dataset.idx), -1); break;
+        case 'remove-cart': removeFromCart(parseInt(el.dataset.idx)); break;
+        case 'select-delivery': selectDelivery(el.dataset.method); break;
+        case 'save-product': saveProduct(); break;
+        case 'edit-product': editProduct(el.dataset.id); break;
+        case 'delete-product': deleteProduct(el.dataset.id); break;
+        case 'toggle-perm': togglePerm(el.dataset.perm); break;
+        case 'add-admin': addAdmin(); break;
+        case 'edit-admin-perms': editAdminPerms(el.dataset.username); break;
+        case 'remove-admin': removeAdmin(el.dataset.username); break;
+        case 'set-order-status': setOrderStatus(el.dataset.id, el.dataset.status); break;
+        case 'upload-image': openImagePicker(); break;
+        case 'clear-image': clearImage(); break;
+    }
+});
+
+const fileInput = document.getElementById('f-image-file');
+if (fileInput) fileInput.addEventListener('change', handleImageFile);
+
+/* ===== СТАРТ ===== */
+console.log('Старт VapeHab Mini App');
+loadUserData();
+loadCart();
+loadDataFromCloud();
+</script>
+</body>
+</html>
